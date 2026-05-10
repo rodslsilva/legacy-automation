@@ -1,0 +1,18 @@
+# C
+*.o
+*.out
+legacy_system
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# VSCode
+.vscode/
+
+# Linux
+.DS_Store
