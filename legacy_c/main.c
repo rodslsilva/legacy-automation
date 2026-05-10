@@ -6,6 +6,32 @@
 
 #define MAX_LINE 256
 
+int is_order_processed(char *order_id)
+{
+    FILE *processed;
+    char line[MAX_LINE];
+
+    processed = fopen("processed.txt", "r");
+
+    if (processed == NULL)
+    {
+        return 0;
+    }
+
+    while (fgets(line, sizeof(line), processed))
+    {
+        if (strstr(line, order_id) != NULL)
+        {
+            fclose(processed);
+            return 1;
+        }
+    }
+
+    fclose(processed);
+
+    return 0;
+}
+
 void process_orders()
 {
     FILE *orders;
@@ -25,14 +51,28 @@ void process_orders()
     processed = fopen("processed.txt", "a");
     logs = fopen("logs/system.log", "a");
 
+    if(processed == NULL || logs == NULL){
+        printf("Erro ao abrir arquivos de sistema.\n");
+
+        return;
+    }
+
     fprintf(logs, "Iniciando processamento... \n");
 
     while (fgets(line, sizeof(line), orders))
     {
         line[strcspn(line, "\n")] = 0;
 
+        if(is_order_processed(line)){
+            printf("Pedido duplicado ignorado: %s\n", line);
+
+            fprintf(logs, "Pedido duplicado ignorado: %s\n", line);
+
+            continue;
+        }
+
         sleep(2);
-        
+
         if (rand() % 10 == 0)
         {
 
