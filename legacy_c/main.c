@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #define MAX_LINE 256
 
@@ -28,6 +29,8 @@ void process_orders()
     while (fgets(line, sizeof(line), orders))
     {
         line[strcspn(line, "\n")] = 0;
+
+        sleep(2);
 
         printf("Processando pedido: %s\n", line);
 
