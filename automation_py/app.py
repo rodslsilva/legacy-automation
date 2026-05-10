@@ -10,7 +10,7 @@ LEGACY_PATH = "../legacy_c/legacy_system"
 ORDERS_FILE = "../legacy_c/orders.txt"
 
 last_run = 0
-print("WATCHDOG INICIADO")
+
 def write_log(message):
     
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
