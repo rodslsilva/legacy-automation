@@ -1,10 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <string.h>
 #include "processor.h"
 
-int main(){
+int main(int argc, char *argv[])
+{
+
     srand(time(NULL));
+
+    if(argc > 1 && strcmp(argv[1], "auto") == 0){
+        return process_orders();
+    }
 
     int option;
 
@@ -14,21 +21,19 @@ int main(){
     printf("Escolha: ");
 
     scanf("%d", &option);
+   
 
     switch (option)
     {
     case 1:
-        process_orders();
-        break;
-    
+        return process_orders();
+
     case 2:
         printf("Saindo...\n");
-        break;
+        return 0;
 
     default:
         printf("Opção inválida.\n");
-        break;
+        return 1;
     }
-
-    return 0;
 }

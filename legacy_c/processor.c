@@ -9,11 +9,10 @@
 
 #define MAX_LINE 256
 
+
 int is_order_processed(char *order_id)
 {
-
     FILE *processed;
-
     char line[MAX_LINE];
 
     processed = fopen("processed.txt", "r");
@@ -25,26 +24,26 @@ int is_order_processed(char *order_id)
 
     while (fgets(line, sizeof(line), processed) != NULL)
     {
+        // remove newline
         line[strcspn(line, "\n")] = 0;
 
-        if (strstr(line, order_id) != NULL)
+        // comparação EXATA (corrigido)
+        if (strcmp(line, order_id) == 0)
         {
             fclose(processed);
-
             return 1;
         }
     }
 
     fclose(processed);
-
     return 0;
 }
 
-void process_orders()
+
+int process_orders()
 {
     FILE *orders;
     FILE *processed;
-
     char line[MAX_LINE];
 
     orders = fopen("orders.txt", "r");
@@ -52,22 +51,19 @@ void process_orders()
     if (orders == NULL)
     {
         printf("Erro ao abrir orders.txt\n");
-
         write_log("ERRO: Falha ao abrir orders.txt");
-
-        exit(1);
+        return 1;
     }
 
     processed = fopen("processed.txt", "a");
 
     if (processed == NULL)
     {
-
         printf("Erro ao abrir processed.txt\n");
-
         write_log("ERRO: Falha ao abrir processed.txt");
 
-        return;
+        fclose(orders);
+        return 1;
     }
 
     write_log("Iniciando processamento");
@@ -76,22 +72,26 @@ void process_orders()
     {
         line[strcspn(line, "\n")] = 0;
 
-        if(is_order_processed(line)){
+        if (is_order_processed(line))
+        {
             printf("Pedido duplicado ignorado: %s\n", line);
-
             write_log("Pedido duplicado ignorado");
-
             continue;
         }
 
-        sleep(2);
+        sleep(1);
 
-        if(rand() % 10 == 0) {
+        // simulação de falha
+        if (rand() % 10 == 0)
+        {
             write_log("ERRO CRÍTICO: Falha inesperada");
 
             printf("ERRO: Sistema legado falhou.\n");
 
-            exit(1);
+            fclose(orders);
+            fclose(processed);
+
+            return 1;
         }
 
         printf("Processando pedido: %s\n", line);
@@ -107,4 +107,6 @@ void process_orders()
     fclose(processed);
 
     printf("Processamento concluído.\n");
+
+    return 0;
 }
