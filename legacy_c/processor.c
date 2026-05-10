@@ -55,7 +55,7 @@ void process_orders()
 
         write_log("ERRO: Falha ao abrir orders.txt");
 
-        return;
+        exit(1);
     }
 
     processed = fopen("processed.txt", "a");
