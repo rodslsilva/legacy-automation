@@ -14,23 +14,22 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 LEGACY_DIR = os.path.abspath(os.path.join(BASE_DIR, "../legacy_c"))
 LEGACY_BIN = os.path.join(LEGACY_DIR, "legacy_system")
 ORDERS_FILE = os.path.join(LEGACY_DIR, "orders.txt")
+LOG_FILE = os.path.join(BASE_DIR, "automation.log")
 
 # ----------------------------
-# QUEUE + SYNC
+# QUEUE + LOCK
 # ----------------------------
 job_queue = queue.Queue()
-event_lock = threading.Lock()
-last_event_time = 0
-
+lock = threading.Lock()
+is_running = False
 
 # ----------------------------
 # LOG
 # ----------------------------
 def write_log(message):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(os.path.join(BASE_DIR, "automation.log"), "a") as log:
+    with open(LOG_FILE, "a") as log:
         log.write(f"[{timestamp}] {message}\n")
-
 
 # ----------------------------
 # VALIDATION
@@ -40,21 +39,24 @@ def validate_orders():
         with open(ORDERS_FILE, "r") as f:
             lines = [l.strip() for l in f if l.strip()]
 
-        for line in lines:
-            if not line.startswith("PEDIDO_"):
-                return False
-
-        return True
+        return all(line.startswith("PEDIDO") for line in lines)
 
     except Exception as e:
-        write_log(f"ERRO ao validar orders: {str(e)}")
+        write_log(f"ERRO VALIDACAO: {e}")
         return False
 
-
 # ----------------------------
-# LEGACY EXECUTION
+# EXECUTOR
 # ----------------------------
 def run_legacy_system():
+    global is_running
+
+    with lock:
+        if is_running:
+            write_log("Ignorando execução (já em andamento)")
+            return
+        is_running = True
+
     try:
         write_log("Iniciando sistema legado")
 
@@ -77,13 +79,16 @@ def run_legacy_system():
             write_log(f"STDERR:\n{result.stderr.strip()}")
 
         if result.returncode != 0:
-            write_log(f"ERRO: Sistema falhou com código {result.returncode}")
+            write_log(f"ERRO: código {result.returncode}")
         else:
             write_log("Execução concluída com sucesso")
 
     except Exception as e:
-        write_log(f"ERRO CRÍTICO: {str(e)}")
+        write_log(f"ERRO CRÍTICO: {e}")
 
+    finally:
+        with lock:
+            is_running = False
 
 # ----------------------------
 # WORKER
@@ -98,28 +103,28 @@ def worker():
 
 threading.Thread(target=worker, daemon=True).start()
 
-
 # ----------------------------
 # WATCHDOG
 # ----------------------------
 class OrderHandler(FileSystemEventHandler):
 
-    def on_modified(self, event):
-        global last_event_time
+    def __init__(self):
+        self.last_event_time = 0
 
+    def on_modified(self, event):
         if os.path.basename(event.src_path) != "orders.txt":
             return
 
         now = time.time()
 
-        with event_lock:
-            if now - last_event_time < 2:
-                return
-            last_event_time = now
+        # debounce (evita múltiplos triggers)
+        if now - self.last_event_time < 2:
+            return
 
-        write_log("Evento enfileirado")
+        self.last_event_time = now
+
+        write_log("Evento detectado")
         job_queue.put(True)
-
 
 # ----------------------------
 # MAIN
