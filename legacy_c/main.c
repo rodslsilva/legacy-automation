@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 
 #define MAX_LINE 256
 
@@ -31,6 +32,16 @@ void process_orders()
         line[strcspn(line, "\n")] = 0;
 
         sleep(2);
+        
+        if (rand() % 10 == 0)
+        {
+
+            fprintf(logs, "ERRO CRITICO: Falha inesperada.\n");
+
+            printf("ERRO: Sistema legado falhou.\n");
+
+            exit(1);
+        }
 
         printf("Processando pedido: %s\n", line);
 
@@ -50,6 +61,8 @@ void process_orders()
 
 int main()
 {
+
+    srand(time(NULL));
 
     int option;
 
